@@ -1,0 +1,7 @@
+src/
+tests/
+build_tmp/
+__pycache__/
+*.docx
+~$*
+.hyperglot-cache

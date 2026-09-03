@@ -1,0 +1,30 @@
+This repository contains two kinds of licensed material:
+
+1. Font data (kaiyuan-kai-sc.ttf, kaiyuan-kai-sc.css, fonts/*.woff2): a
+   derivative of Arphic Technology Co., Ltd.'s 文鼎簡中楷 (gkai00mp.ttf) and
+   AR PL UKai (ukai.ttc, CN face), licensed under the Arphic Public License.
+   See ARPHICPL.TXT for the full license text and README.md for the
+   modification notice required by section 2(a).
+
+2. Everything else (build.py and other project files): MIT License.
+
+   Copyright (c) 2026 the free-fonts project
+
+   Permission is hereby granted, free of charge, to any person obtaining a
+   copy of this software and associated documentation files (the
+   "Software"), to deal in the Software without restriction, including
+   without limitation the rights to use, copy, modify, merge, publish,
+   distribute, sublicense, and/or sell copies of the Software, and to
+   permit persons to whom the Software is furnished to do so, subject to
+   the following conditions:
+
+   The above copyright notice and this permission notice shall be included
+   in all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

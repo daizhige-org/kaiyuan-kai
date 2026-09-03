@@ -1,0 +1,29 @@
+{
+  "name": "@free-fonts/kaiyuan-kai-sc",
+  "version": "0.0.1",
+  "description": "开元楷体 / Kaiyuan Kai SC",
+  "license": "MIT AND Arphic-1999",
+  "main": "kaiyuan-kai-sc.css",
+  "style": "kaiyuan-kai-sc.css",
+  "files": [
+    "kaiyuan-kai-sc.css",
+    "fonts",
+    "README.md",
+    "LICENSE",
+    "ARPHICPL.TXT"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daizhige-org/kaiyuan-kai-sc.git"
+  },
+  "keywords": [
+    "font",
+    "webfont",
+    "woff2",
+    "cjk",
+    "kai",
+    "kaiti",
+    "simplified-chinese",
+    "arphic"
+  ]
+}
