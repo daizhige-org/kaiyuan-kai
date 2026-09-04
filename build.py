@@ -6,9 +6,8 @@ classic 文鼎簡中楷 (gkai00mp.ttf, GB character set) wherever it has the
 character, and from AR PL UKai's CN face (ukai.ttc, font index 0) for every
 codepoint 簡中楷 lacks. Rationale: 簡中楷 is the original simplified-glyph
 Kai design; UKai's CN face reuses 文鼎中楷 Big5's Taiwan glyph shapes for
-characters where PRC/Taiwan forms differ (see arphic-ukai/README.md in the
-free-fonts repo), so it is only used to fill in coverage, never to override
-a 簡中楷 glyph.
+characters where PRC/Taiwan forms differ (verified in earlier research), so
+it is only used to fill in coverage, never to override a 簡中楷 glyph.
 
 Both upstream fonts are Arphic Technology Co., Ltd. works under the Arphic
 Public License; merging and redistributing under that license (see
@@ -80,13 +79,17 @@ FONT_VERSION = (ROOT / "VERSION").read_text().strip()
 MOD_NOTICE = (
     "开元楷体 / Kaiyuan Kai SC, built by the free-fonts project (2026). Glyphs "
     "are merged from two Arphic Technology Co., Ltd. fonts under the Arphic "
-    "Public License: 文鼎簡中楷 (gkai00mp.ttf 2.11) supplies every codepoint it "
+    "Public License: 文鼎简中楷 (gkai00mp.ttf 2.11) supplies every codepoint it "
     "covers; AR PL UKai's CN face (ukai.ttc 0.2.20080216.2, font index 0) "
-    "supplies the remaining codepoints only. No glyph outlines were altered; "
-    "only cmap/glyph-set merging, subsetting and name-table changes were "
-    "made. Not affiliated with or endorsed by Arphic Technology; not named "
-    "after Arphic's AR PL / 文鼎 marks. "
-    "Sources: https://github.com/frankslin/free-fonts"
+    "supplies the remaining codepoints only. Modifications: cmap/glyph-set "
+    "merging; the em dash outline stretched horizontally to the full advance "
+    "width, and the ellipsis dots and the punctuation 、。，；：！？“”‘’ "
+    "translated within their advance boxes (no strokes redrawn); hhea/OS/2/"
+    "vhea vertical metrics rewritten to a uniform ratio; UKai's GSUB/GPOS/"
+    "GDEF/VORG tables not carried over and a new halt GPOS feature added; a "
+    "meta table added; the name table rewritten. Not affiliated with or "
+    "endorsed by Arphic Technology; not named after Arphic's AR PL / 文鼎 "
+    "marks. Sources: https://github.com/daizhige-org/kaiyuan-kai"
 )
 
 COPYRIGHT = (
