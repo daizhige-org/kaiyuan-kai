@@ -93,11 +93,28 @@ webfont，由 free-fonts 项目于 2026 年合并生成——字形来自文鼎�
 
 ## 用法
 
+通过 CDN 引用 npm 包 [`@free-fonts/kaiyuan-kai-sc`](https://www.npmjs.com/package/@free-fonts/kaiyuan-kai-sc)：
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/@free-fonts/kaiyuan-kai-sc@0.0.1/kaiyuan-kai-sc.css">
+```
+
+jsDelivr 等效：
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@free-fonts/kaiyuan-kai-sc@0.0.1/kaiyuan-kai-sc.css">
+```
+
+也可以把 `kaiyuan-kai-sc.css` 和 `fonts/` 放到自己的站点上，用相对路径引用：
+
 ```html
 <link rel="stylesheet" href="./kaiyuan-kai-sc.css">
-<style>
+```
+
+然后在 CSS 里指定字体：
+
+```css
 body { font-family: 'Kaiyuan Kai SC', cursive, serif; }
-</style>
 ```
 
 CSS 用 256-codepoint `unicode-range` 分片，浏览器只下载页面实际用到的区块
@@ -123,7 +140,8 @@ python3 build.py --no-dl    # src/gkai00mp.ttf、src/ukai.ttc 已存在时跳过
 
 1. 修改 `VERSION`（例如 `0.0.1` → `0.0.2`）。
 2. 同步修改 `package.json` 的 `"version"` 字段（npm 无法从外部文件读取该
-   字段，只能手动保持一致，两处均需修改）。
+   字段，只能手动保持一致，两处均需修改）。「用法」一节 CDN 链接里的版本号
+   也要一并更新。
 3. `git tag v0.0.2 && git push origin v0.0.2` 触发下面的 Release workflow——
    CI 会先检查 tag 版本号是否与 `VERSION` 文件一致，不一致则直接失败，以避免
    发布一个内部版本号与 tag 不符的字体。
