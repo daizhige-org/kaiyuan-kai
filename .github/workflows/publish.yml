@@ -21,6 +21,12 @@ jobs:
           node-version: 24 # bundles npm >= 11.5.1, required for OIDC
           registry-url: https://registry.npmjs.org
 
+      # The npm page gets its own consumer-facing README (npm/README.md);
+      # the root README.md is the repo/developer one. npm always packs the
+      # root README.md, so swap it in for this job only.
+      - name: Use the npm README
+        run: cp npm/README.md README.md
+
       - name: Verify package contents
         run: npm pack --dry-run
 

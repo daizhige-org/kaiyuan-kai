@@ -46,7 +46,21 @@ BUILD_DIR = ROOT / "build_tmp"
 FONTS_DIR = ROOT / "fonts"
 CSS_PATH = ROOT / "kaiyuan-kai-sc.css"
 MASTER_PATH = ROOT / "kaiyuan-kai-sc.ttf"
-CHUNK_SIZE = 0x100
+FREQ_PATH = ROOT / "data" / "han-frequency.txt"
+
+# Webfont slicing. A 256-codepoint-block split scatters common characters
+# over the whole URO, so an ordinary page ends up fetching most of the font.
+# Instead Han characters are ranked by frequency (data/han-frequency.txt)
+# and sliced in tiers: the most common ones share a few big slices nearly
+# every page needs anyway, and rare ones go into small slices so a stray rare
+# character costs little. Scheme adapted from delphij/chaos-theme's
+# tools/fetch_webfonts.py.
+HAN_TIERS = (  # (how many characters by rank, characters per slice)
+    (1000, 250),
+    (2500, 128),
+    (None, 64),  # everything else
+)
+OTHER_SLICE_SIZE = 128  # non-Han, non-core codepoints, in codepoint order
 
 GKAI_VERSION = "2.11"
 GKAI_URL = (
@@ -500,29 +514,110 @@ def _build_chunk(args: tuple) -> tuple[str, int]:
     return p.name, p.stat().st_size
 
 
-def unicode_range_str(start: int) -> str:
-    end = start + CHUNK_SIZE - 1
-    if end <= 0xFFFF:
-        return f"U+{start:04X}-{end:04X}"
-    return f"U+{start:05X}-{end:05X}"
+def is_cjk_ideograph(cp: int) -> bool:
+    return (
+        0x3400 <= cp <= 0x4DBF
+        or 0x4E00 <= cp <= 0x9FFF
+        or 0xF900 <= cp <= 0xFAFF
+        or 0x20000 <= cp <= 0x323AF
+    )
+
+
+def is_core_punct_or_ascii(cp: int) -> bool:
+    """ASCII and CJK punctuation: slice 0, which practically every page uses."""
+    return (
+        0x0020 <= cp <= 0x007E
+        or cp == 0x00B7  # middle dot ·
+        or 0x2000 <= cp <= 0x206F  # general punctuation (—, …, “”)
+        or cp in (0x25CB, 0x25CF, 0x25E6)  # emphasis marks ○ ● ◦
+        or 0x3000 <= cp <= 0x303F  # CJK symbols & punctuation (、。《》)
+        or 0xFE10 <= cp <= 0xFE1F  # vertical forms
+        or 0xFE30 <= cp <= 0xFE4F  # CJK compatibility forms
+        or 0xFF00 <= cp <= 0xFFEF  # halfwidth & fullwidth forms (：；！？（）)
+    )
+
+
+def gb2312_tier(cp: int) -> int:
+    """1 for GB2312 level 1 (3,755 common characters), 2 for level 2, else 3."""
+    try:
+        b = chr(cp).encode("gb2312")
+    except UnicodeEncodeError:
+        return 3
+    if len(b) == 2:
+        if 0xB0 <= b[0] <= 0xD7:
+            return 1
+        if 0xD8 <= b[0] <= 0xF7:
+            return 2
+    return 3
+
+
+def load_han_rank() -> dict[int, int]:
+    """Codepoint -> frequency rank (0 = most common) from data/han-frequency.txt."""
+    chars = "".join(
+        line.strip()
+        for line in FREQ_PATH.read_text(encoding="utf-8").splitlines()
+        if not line.startswith("#")
+    )
+    return {ord(ch): i for i, ch in enumerate(chars)}
+
+
+def build_slices(all_cps: list[int]) -> list[list[int]]:
+    """Split the font's codepoints into slices; see HAN_TIERS above."""
+    rank = load_han_rank()
+    unranked = len(rank)
+    core = [cp for cp in all_cps if is_core_punct_or_ascii(cp)]
+    han = [cp for cp in all_cps if is_cjk_ideograph(cp)]
+    other = [
+        cp for cp in all_cps
+        if not is_cjk_ideograph(cp) and not is_core_punct_or_ascii(cp)
+    ]
+    # Characters the frequency table doesn't know sort after all ranked
+    # ones, GB2312 level 1 before level 2 before the rest, then by codepoint.
+    han.sort(key=lambda cp: (rank.get(cp, unranked), gb2312_tier(cp), cp))
+
+    slices = [core] if core else []
+    pos = 0
+    for count, per_slice in HAN_TIERS:
+        end = len(han) if count is None else min(pos + count, len(han))
+        for i in range(pos, end, per_slice):
+            slices.append(sorted(han[i:min(i + per_slice, end)]))
+        pos = end
+    for i in range(0, len(other), OTHER_SLICE_SIZE):
+        slices.append(other[i:i + OTHER_SLICE_SIZE])
+    return slices
+
+
+def unicode_range_str(cps: list[int]) -> str:
+    """Compact sorted codepoints into a CSS unicode-range value."""
+    parts = []
+    start = prev = cps[0]
+    for cp in cps[1:] + [None]:
+        if cp is not None and cp == prev + 1:
+            prev = cp
+            continue
+        parts.append(f"U+{start:X}" if start == prev else f"U+{start:X}-{prev:X}")
+        start = prev = cp
+    return ",".join(parts)
 
 
 def build_webfonts(jobs: int) -> None:
     FONTS_DIR.mkdir(exist_ok=True)
+    # Slice membership, and so the file count, changes with the cmap: clear
+    # the previous build's files rather than leave stale ones behind.
+    for old in FONTS_DIR.glob(f"{PREFIX}-*.woff2"):
+        old.unlink()
 
     tt = TTFont(str(MASTER_PATH), lazy=True)
-    cps = set(tt.getBestCmap())
+    cps = sorted(tt.getBestCmap())
     tt.close()
 
-    chunk_map: dict[int, set[int]] = {}
-    for cp in cps:
-        chunk_map.setdefault((cp // CHUNK_SIZE) * CHUNK_SIZE, set()).add(cp)
-    print(f"{MASTER_PATH.name}: {len(cps):,} cps, {len(chunk_map)} chunks")
+    slices = build_slices(cps)
+    names = [f"{PREFIX}-{WEIGHT}-{i:03d}.woff2" for i in range(len(slices))]
+    print(f"{MASTER_PATH.name}: {len(cps):,} cps, {len(slices)} slices")
 
     tasks = [
-        (str(MASTER_PATH), chunk_cps,
-         str(FONTS_DIR / f"{PREFIX}-{WEIGHT}-{start:06x}.woff2"))
-        for start, chunk_cps in sorted(chunk_map.items())
+        (str(MASTER_PATH), slice_cps, str(FONTS_DIR / name))
+        for name, slice_cps in zip(names, slices)
     ]
     with Pool(processes=jobs) as pool:
         for i, (name, size) in enumerate(pool.imap_unordered(_build_chunk, tasks), 1):
@@ -530,15 +625,15 @@ def build_webfonts(jobs: int) -> None:
                 print(f"  [{i}/{len(tasks)}] {name} {size // 1024} KB")
 
     rules = []
-    for start in sorted(chunk_map):
+    for name, slice_cps in zip(names, slices):
         rule = (
             "@font-face {\n"
             f"  font-family: '{FAMILY_EN}';\n"
             "  font-style: normal;\n"
             f"  font-weight: {WEIGHT};\n"
             "  font-display: swap;\n"
-            f"  src: url('fonts/{PREFIX}-{WEIGHT}-{start:06x}.woff2') format('woff2');\n"
-            f"  unicode-range: {unicode_range_str(start)};\n"
+            f"  src: url('fonts/{name}') format('woff2');\n"
+            f"  unicode-range: {unicode_range_str(slice_cps)};\n"
             "}"
         )
         rules.append(rule)

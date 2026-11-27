@@ -82,7 +82,7 @@ webfont，由 free-fonts 项目于 2026 年合并生成——字形来自文鼎�
 0.2.20080216.2, font index 0)：简中楷覆盖到的码位一律用简中楷的字形，其余码位
 用 UKai CN 补上。具体改动如下：
 
-- cmap／字符集合并，并按 Unicode 码位切成 256 码位一片的 WOFF2 子集。
+- cmap／字符集合并，并切成按字频分层的 `unicode-range` WOFF2 子集。
 - 标点字形位置调整：破折号轮廓横向拉伸至贴齐字身两边，省略号三点平移至
   六等分点，`、。，；：！？“”‘’` 作纵向平移。未重新绘制任何笔画。
 - `hhea`／`OS/2`／`vhea` 垂直度量表改写为统一比例。
@@ -96,13 +96,13 @@ webfont，由 free-fonts 项目于 2026 年合并生成——字形来自文鼎�
 通过 CDN 引用 npm 包 [`@free-fonts/kaiyuan-kai-sc`](https://www.npmjs.com/package/@free-fonts/kaiyuan-kai-sc)：
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@free-fonts/kaiyuan-kai-sc@0.0.1/kaiyuan-kai-sc.css">
+<link rel="stylesheet" href="https://unpkg.com/@free-fonts/kaiyuan-kai-sc@0.0.2/kaiyuan-kai-sc.css">
 ```
 
 jsDelivr 等效：
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@free-fonts/kaiyuan-kai-sc@0.0.1/kaiyuan-kai-sc.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@free-fonts/kaiyuan-kai-sc@0.0.2/kaiyuan-kai-sc.css">
 ```
 
 也可以把 `kaiyuan-kai-sc.css` 和 `fonts/` 放到自己的站点上，用相对路径引用：
@@ -117,9 +117,20 @@ jsDelivr 等效：
 body { font-family: 'Kaiyuan Kai SC', cursive, serif; }
 ```
 
-CSS 用 256-codepoint `unicode-range` 分片，浏览器只下载页面实际用到的区块
-（同 [free-fonts](https://github.com/frankslin/free-fonts) 项目里其它字型
-package 的约定）。
+CSS 用 `unicode-range` 分片，浏览器只下载页面实际用到的分片。分片不按
+Unicode 区块，而是按字频分层（做法参考
+[delphij/chaos-theme](https://github.com/delphij/chaos-theme) 的
+`tools/fetch_webfonts.py`）：
+
+- 第 0 片：ASCII 与全部中文标点，几乎每个页面都会用到。
+- 汉字按字频排序：最常用的 1,000 字每片 250 字，其后 2,500 字每片 128 字，
+  其余每片 64 字。
+- 非汉字的其它符号按码位顺序每片 128 个。
+
+常用字集中在少数几片里，一篇普通文章只需下载整包的五分之一左右；按 256 码位
+区块切的话常用字散布在整个 URO，同一篇文章要下载六成。字频顺序见
+`data/han-frequency.txt`，由 `tools/make_han_frequency.py` 从
+[jieba](https://github.com/fxsjy/jieba) 的词频表派生。
 
 ## 重新生成
 
@@ -129,8 +140,8 @@ python3 build.py            # 下载上游字型到 src/，合并、切片
 python3 build.py --no-dl    # src/gkai00mp.ttf、src/ukai.ttc 已存在时跳过下载
 ```
 
-仓库中除 `build.py` 外不需要任何其他输入——上游字型由 `build.py` 自行下载，
-`src/` 不纳入版本控制。全新 clone 一份仓库、安装好上述三个 pip 包，运行
+仓库中除 `build.py` 与 `data/han-frequency.txt`（切片用的字频顺序）外不需要
+任何其他输入——上游字型由 `build.py` 自行下载，`src/` 不纳入版本控制。全新 clone 一份仓库、安装好上述三个 pip 包，运行
 `python3 build.py`，即可重新产出与仓库中一致的 `kaiyuan-kai-sc.ttf`。
 
 ## 版本号
@@ -140,8 +151,8 @@ python3 build.py --no-dl    # src/gkai00mp.ttf、src/ukai.ttc 已存在时跳过
 
 1. 修改 `VERSION`（例如 `0.0.1` → `0.0.2`）。
 2. 同步修改 `package.json` 的 `"version"` 字段（npm 无法从外部文件读取该
-   字段，只能手动保持一致，两处均需修改）。「用法」一节 CDN 链接里的版本号
-   也要一并更新。
+   字段，只能手动保持一致，两处均需修改）。「用法」一节与 `npm/README.md`
+   里 CDN 链接的版本号也要一并更新。
 3. `git tag v0.0.2 && git push origin v0.0.2` 触发下面的 Release workflow——
    CI 会先检查 tag 版本号是否与 `VERSION` 文件一致，不一致则直接失败，以避免
    发布一个内部版本号与 tag 不符的字体。
@@ -154,6 +165,13 @@ push origin v0.0.1`）即会在 CI 中运行上述同一个 `build.py`，将产�
 + README/LICENSE/ARPHICPL.TXT）发布到 GitHub Release。也可以在 Actions 页
 手动运行一次（`workflow_dispatch`）做不发布的 dry-run，构建产物会作为
 workflow artifact 保留。
+
+## npm 页面的 README
+
+npm 包页面显示的不是本文件，而是 [`npm/README.md`](npm/README.md)——面向
+网页字型使用者的中英双语说明。`.github/workflows/publish.yml` 在
+`npm publish` 之前把它复制为根目录的 `README.md`（仅在 CI 的工作目录里，
+不回写仓库）。npm 只在发布新版本时更新页面上的 README。
 
 ## 已知问题 / 文档
 

@@ -28,3 +28,8 @@ This repository contains two kinds of licensed material:
    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+3. data/han-frequency.txt: a character ordering derived from the word
+   frequencies in jieba's dict.txt (https://github.com/fxsjy/jieba),
+   Copyright (c) 2013 Sun Junyi, used under the MIT License (same terms as
+   in section 2). It is a build input only and is not part of the font data.
